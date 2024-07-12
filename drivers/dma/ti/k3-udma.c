@@ -4256,8 +4256,8 @@ static struct dma_chan *udma_of_xlate(struct of_phandle_args *dma_spec,
 	chan = __dma_request_channel(&mask, udma_dma_filter_fn, &filter_param,
 				     ofdma->of_node);
 	if (!chan) {
-		dev_err(ud->dev, "get channel fail in %s.\n", __func__);
-		return ERR_PTR(-EINVAL);
+		dev_err(ud->dev, "get channel fail in %s, deferring.\n", __func__);
+		return ERR_PTR(-EPROBE_DEFER);
 	}
 
 	return chan;
