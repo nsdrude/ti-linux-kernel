@@ -159,6 +159,14 @@ properties:
       used. The absence of this property indicates the muxers
       should be configured so that the external PHY is used.
 
+  phy-supply:
+    $ref: /schemas/regulator/regulator.yaml#
+    description:
+      A reference to a regulator node that provides power to the PHY.
+      This regulator is enabled before the reset GPIO is deasserted
+      and disabled after the reset GPIO is asserted.
+
+
   resets:
     maxItems: 1
 
