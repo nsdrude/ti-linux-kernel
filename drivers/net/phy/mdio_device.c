@@ -17,6 +17,7 @@
 #include <linux/mii.h>
 #include <linux/module.h>
 #include <linux/phy.h>
+#include <linux/regulator/consumer.h>
 #include <linux/reset.h>
 #include <linux/slab.h>
 #include <linux/string.h>
@@ -118,9 +119,17 @@ EXPORT_SYMBOL(mdio_device_remove);
 void mdio_device_reset(struct mdio_device *mdiodev, int value)
 {
 	unsigned int d;
+	int ret;
+
+	/* Enable phy regulator */
+	if (mdiodev->pwr && !value && !regulator_is_enabled(mdiodev->pwr)) {
+		ret = regulator_enable(mdiodev->pwr);
+		if (ret)
+			pr_err("Failed to enable regulator: %d\n", ret);
+	}
 
 	if (!mdiodev->reset_gpio && !mdiodev->reset_ctrl)
-		return;
+		goto disable_pwr;
 
 	if (mdiodev->reset_gpio)
 		gpiod_set_value_cansleep(mdiodev->reset_gpio, value);
@@ -135,6 +144,14 @@ void mdio_device_reset(struct mdio_device *mdiodev, int value)
 	d = value ? mdiodev->reset_assert_delay : mdiodev->reset_deassert_delay;
 	if (d)
 		fsleep(d);
+
+disable_pwr:
+	/* Disable phy regulator */
+	if (mdiodev->pwr && value && regulator_is_enabled(mdiodev->pwr)) {
+		ret = regulator_disable(mdiodev->pwr);
+		if (ret)
+			pr_err("Failed to disable regulator: %d\n", ret);
+	}
 }
 EXPORT_SYMBOL(mdio_device_reset);
 

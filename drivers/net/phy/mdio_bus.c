@@ -27,6 +27,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of_mdio.h>
 #include <linux/phy.h>
+#include <linux/regulator/consumer.h>
 #include <linux/reset.h>
 #include <linux/skbuff.h>
 #include <linux/slab.h>
@@ -67,6 +68,27 @@ static int mdiobus_register_reset(struct mdio_device *mdiodev)
 	return 0;
 }
 
+static int mdiobus_register_regulator(struct mdio_device *mdiodev)
+{
+	struct device *dev = &mdiodev->dev;
+
+	mdiodev->pwr = regulator_get_optional(dev, "phy");
+	if (IS_ERR(mdiodev->pwr)) {
+		int ret = PTR_ERR(mdiodev->pwr);
+
+		mdiodev->pwr = NULL;
+		if (ret == -ENODEV)
+			return 0;
+
+		if (ret != -EPROBE_DEFER)
+			dev_err(dev, "Failed to get phy regulator %d\n", ret);
+
+		return ret;
+	}
+
+	return 0;
+}
+
 int mdiobus_register_device(struct mdio_device *mdiodev)
 {
 	int err;
@@ -75,6 +97,10 @@ int mdiobus_register_device(struct mdio_device *mdiodev)
 		return -EBUSY;
 
 	if (mdiodev->flags & MDIO_DEVICE_FLAG_PHY) {
+		err = mdiobus_register_regulator(mdiodev);
+		if (err)
+			return err;
+
 		err = mdiobus_register_gpiod(mdiodev);
 		if (err)
 			return err;
@@ -99,6 +125,11 @@ int mdiobus_unregister_device(struct mdio_device *mdiodev)
 		return -EINVAL;
 
 	reset_control_put(mdiodev->reset_ctrl);
+
+	if (mdiodev->pwr) {
+		regulator_put(mdiodev->pwr);
+		mdiodev->pwr = NULL;
+	}
 
 	mdiodev->bus->mdio_map[mdiodev->addr] = NULL;
 
