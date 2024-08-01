@@ -135,11 +135,15 @@
 	};
 
 	vdd_phy_3v3: regulator-8 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&main_mdio1_reg_pins_default>;
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_phy_3v3";
-		gpios = <&main_gpio0 45 GPIO_ACTIVE_HIGH>;
+		gpio = <&main_gpio0 45 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-		regulator-always-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-enable-ramp-delay = <20000>;
 		status="okay";
 	};
 
@@ -187,6 +191,7 @@
 		reset-gpios = <&main_gpio0 46 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <10000>;
 		reset-deassert-us = <20000>;
+		phy-supply = <&vdd_phy_3v3>;
 	};
 };
 
@@ -275,6 +280,12 @@
 		>;
 	};
 
+	main_mdio1_reg_pins_default: main-mdio1-reg-pins-default {
+		pinctrl-single,pins = <
+			AM62X_IOPAD(0x00b8, PIN_OUTPUT, 7) /* (U22) VOUT0_DATA0.GPIO0_45 */
+		>;
+	};
+
 	vdd_mmc2_pins_default: vdd-mmc2-pins-default {
 		pinctrl-single,pins = <
 			AM62X_IOPAD(0x00d8, PIN_OUTPUT, 7) /* (V21) VOUT0_DATA8.GPIO0_53 */
@@ -356,7 +367,6 @@
 			AM62X_IOPAD(0x130, PIN_INPUT, 0) /* (AE19) RGMII1_TXC */
 			AM62X_IOPAD(0x12c, PIN_INPUT, 0) /* (AD19) RGMII1_TX_CTL */
 			AM62X_IOPAD(0x00bc, PIN_INPUT, 7) /* (V24) VOUT0_DATA1.GPIO0_46 */
-			AM62X_IOPAD(0x00b8, PIN_INPUT, 7) /* (U22) VOUT0_DATA0.GPIO0_45 */
 		>;
 	};
 };
